@@ -180,7 +180,7 @@ function blockColor(n){const hue=162+Math.min(n,100)*.48;return{face:`hsl(${hue}
 function box(x,y,w,n,active=false){if(w<.1)return;const c=active?{face:'#ffe0a3',top:'#fff3d6',bottom:'#b97839'}:blockColor(n),depth=6,skew=5;ctx.save();const g=ctx.createLinearGradient(0,y,0,y+BH);g.addColorStop(0,c.face);g.addColorStop(1,c.bottom);ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(x,y,w,BH-3,2);ctx.fill();ctx.fillStyle=c.top;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+skew,y-depth);ctx.lineTo(x+w+skew,y-depth);ctx.lineTo(x+w,y);ctx.closePath();ctx.fill();ctx.fillStyle=active?'#a46a32':'#377381';ctx.beginPath();ctx.moveTo(x+w,y);ctx.lineTo(x+w+skew,y-depth);ctx.lineTo(x+w+skew,y+BH-3-depth);ctx.lineTo(x+w,y+BH-3);ctx.closePath();ctx.fill();ctx.lineWidth=active?1.5:1;ctx.strokeStyle=active?'#f0fff8':'#b5e8df';ctx.strokeRect(x+.5,y+.5,Math.max(0,w-1),BH-4);ctx.fillStyle='#e7fff1';ctx.fillRect(x+2,y+1,Math.max(0,w-4),1);ctx.restore()}
 // Preview-only mode: ?showcase=1 allows the developer to inspect all backgrounds locally.
 // This does not alter saved scores, unlocks, or server-side ranking eligibility.
-const showcaseMode=new URLSearchParams(location.search).get('showcase')==='1';
+const showcaseMode=false; // Public release: never enable all-unlocked previews from URL parameters.
 function prismFinale(){
   const t=clock;
   ctx.save();
