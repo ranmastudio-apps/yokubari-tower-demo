@@ -76,7 +76,7 @@ function closeSheets(){document.querySelectorAll('.sheet').forEach(el=>el.hidden
 $('#helpOpen').onclick=()=>openSheet('helpSheet');$('#closeHelp').onclick=closeSheets;$('#closeRegister').onclick=closeSheets;for(const id of ['helpSheet','registerSheet'])$('#'+id).addEventListener('click',e=>{if(e.target===$('#'+id))closeSheets()});
 $('#openRegister').onclick=()=>{if(!bankedResult)return;if(bankedResult.registered){switchView('rank');return}$('#registerLevels').textContent=bankedResult.level;$('#registerPoints').textContent=bankedResult.score.toLocaleString()+' pt';$('#registerTitleBadge').textContent=selectedTitle.title;openSheet('registerSheet')};
 function toast(text){clearTimeout(toastTimer);$('#toast').textContent=text;$('#toast').hidden=false;toastTimer=setTimeout(()=>$('#toast').hidden=true,3500)}
-function renderCollection(){const unlocked=milestones.filter(m=>showcaseMode||m.at<=profile.levels),next=milestones.find(m=>m.at>profile.levels);$('#progressText').textContent=next?'次の景色：'+next.name:'すべての景色を解放';$('#progressCount').textContent=next?profile.levels+' / '+next.at+' 段':profile.levels+' 段';$('#progressFill').style.width=(next?Math.min(100,profile.levels/next.at*100):100)+'%';const grid=$('#skinGrid');grid.replaceChildren();milestones.forEach(m=>{const locked=!showcaseMode&&m.at>profile.levels,button=document.createElement('button');button.className='skin-card';button.dataset.theme=m.id;button.disabled=locked;button.setAttribute('aria-pressed',String(selectedTheme.id===m.id));button.setAttribute('aria-label',m.name+(locked?' '+m.at+'段で解放':' を選ぶ'));let art=document.createElement('div');art.className='skin-art';art.style.background='linear-gradient(145deg,'+m.colors[0]+','+m.colors[1]+')';art.style.setProperty('--skin',m.accent);let badge=document.createElement('span');badge.className='skin-state';badge.textContent=locked?'未解放':selectedTheme.id===m.id?'選択中':'獲得済み';let info=document.createElement('div');info.className='skin-info';let name=document.createElement('span');name.className='skin-name';name.textContent=m.name;let note=document.createElement('small');note.textContent=m.at?m.at+'段を持ち帰る':'最初の景色';info.append(name,note);button.append(art,badge,info);button.onclick=()=>{selectedTheme=m;$('#board').classList.toggle('prism-active',m.id==='prism');if(!showcaseMode){profile.theme=m.id;save('tower-profile-v2',profile)}renderCollection();toast(m.name+(showcaseMode?' · プレビュー中':'を選択しました'))};grid.append(button)});const select=$('#titleSelect');select.replaceChildren();unlocked.filter(m=>m.at<=300).forEach(m=>{const option=document.createElement('option');option.value=m.id;option.textContent=m.title;select.append(option)});select.value=selectedTitle.id;select.onchange=()=>{selectedTitle=milestones.find(m=>m.id===select.value&&m.at<=profile.levels)||milestones[0];profile.title=selectedTitle.id;save('tower-profile-v2',profile);toast('次のランキング登録で称号が反映されます')}}
+function renderCollection(){const unlocked=milestones.filter(m=>showcaseMode||m.at<=profile.levels),next=milestones.find(m=>m.at>profile.levels);$('#progressText').textContent=next?'次の景色：'+next.name:'すべての景色を解放';$('#progressCount').textContent=next?profile.levels+' / '+next.at+' 段':profile.levels+' 段';$('#progressFill').style.width=(next?Math.min(100,profile.levels/next.at*100):100)+'%';const grid=$('#skinGrid');grid.replaceChildren();milestones.forEach(m=>{const locked=!showcaseMode&&m.at>profile.levels,button=document.createElement('button');button.className='skin-card';button.dataset.theme=m.id;button.disabled=locked;button.setAttribute('aria-pressed',String(selectedTheme.id===m.id));button.setAttribute('aria-label',m.name+(locked?' '+m.at+'段で解放':' を選ぶ'));let art=document.createElement('div');art.className='skin-art';art.style.background='linear-gradient(145deg,'+m.colors[0]+','+m.colors[1]+')';art.style.setProperty('--skin',m.accent);let badge=document.createElement('span');badge.className='skin-state';badge.textContent=locked?'未解放':selectedTheme.id===m.id?'選択中':'獲得済み';let info=document.createElement('div');info.className='skin-info';let name=document.createElement('span');name.className='skin-name';name.textContent=m.name;let note=document.createElement('small');note.textContent=m.at?m.at+'段を持ち帰る':'最初の景色';info.append(name,note);button.append(art,badge,info);button.onclick=()=>{selectedTheme=m;document.querySelector('#board').classList.toggle('prism-active',m.id==='prism');if(!showcaseMode){profile.theme=m.id;save('tower-profile-v2',profile)}renderCollection();toast(m.name+(showcaseMode?' · プレビュー中':'を選択しました'))};grid.append(button)});const select=$('#titleSelect');select.replaceChildren();unlocked.filter(m=>m.at<=300).forEach(m=>{const option=document.createElement('option');option.value=m.id;option.textContent=m.title;select.append(option)});select.value=selectedTitle.id;select.onchange=()=>{selectedTitle=milestones.find(m=>m.id===select.value&&m.at<=profile.levels)||milestones[0];profile.title=selectedTitle.id;save('tower-profile-v2',profile);toast('次のランキング登録で称号が反映されます')}}
 async function loadRanking(){const list=$('#rankList');list.replaceChildren();const li=document.createElement('li');li.textContent='オンラインランキングはApp Store版に向けて準備中です。現在はオフライン体験版です。';list.append(li);$('#refresh').disabled=true;}
 $('#refresh').onclick=loadRanking;try{$('#username').value=localStorage.getItem('tower-name')||''}catch{}
 $('#submitScore').onclick=async()=>{const result=bankedResult,name=$('#username').value.trim();if(!result||result.registered)return;if(!name||Array.from(name).length>12){$('#rankStatus').textContent='名前は1〜12文字で入力してください。';return}$('#submitScore').disabled=true;$('#rankStatus').textContent='記録を登録中…';try{const token=await result.promise;if(!token)throw Error('挑戦開始時に通信できませんでした。次の挑戦で登録してください。');const r=await fetch('/api/score',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,trace:result.trace,token,titleId:selectedTitle.id})});const data=await r.json();if(!r.ok)throw Error(data.error);result.registered=true;try{localStorage.setItem('tower-name',name)}catch{}$('#openRegister').textContent='登録済み · ランキングを見る ↗';closeSheets();switchView('rank');toast('記録を登録しました！')}catch(e){$('#rankStatus').textContent=e.message;$('#submitScore').disabled=false}};
@@ -89,38 +89,75 @@ function box(x,y,w,n,active=false){if(w<.1)return;const c=active?{face:'#ffe0a3'
 const showcaseMode=true; // Separate developer preview only; normal index.html remains progression-locked.
 selectedTheme=milestones.find(m=>m.id==='prism'); // Preview opens on final reward, no score change.
 function prismFinale(){
-  const glow=ctx.createRadialGradient(180,142,8,180,145,220);
-  glow.addColorStop(0,'#f5f4ff77');glow.addColorStop(.32,'#bb56ff44');glow.addColorStop(.7,'#00eeff16');glow.addColorStop(1,'#00000000');
-  ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
-  ctx.save();ctx.globalCompositeOperation='screen';
-  for(let i=0;i<7;i++){
-    ctx.strokeStyle=['#ff6eea','#71f9ff','#a985ff','#ffe09c'][i%4];
-    ctx.globalAlpha=.22;ctx.lineWidth=10+i*2;ctx.beginPath();
-    const wave=Math.sin(clock*.22+i)*13;
-    ctx.moveTo(-30,40+i*23);ctx.bezierCurveTo(75,5+i*22+wave,230,175-i*8,390,15+i*24);ctx.stroke();
+  const t=clock;
+  ctx.save();
+  // Dedicated vivid sky, unlike all other collectible backgrounds.
+  const sky=ctx.createLinearGradient(0,0,W,H);
+  sky.addColorStop(0,'#441465');sky.addColorStop(.33,'#20216b');
+  sky.addColorStop(.68,'#0c386d');sky.addColorStop(1,'#0b153a');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  const bloom=ctx.createRadialGradient(180,155,6,180,155,245);
+  bloom.addColorStop(0,'#fff9facc');bloom.addColorStop(.16,'#ff8be68b');
+  bloom.addColorStop(.4,'#8758ff55');bloom.addColorStop(.72,'#4cdaff28');
+  bloom.addColorStop(1,'#00134400');ctx.fillStyle=bloom;ctx.fillRect(0,0,W,H);
+  ctx.globalCompositeOperation='screen';
+  // Radiating rainbow rays.
+  for(let i=0;i<24;i++){
+    const a=i*Math.PI/12+t*.018,r=420;
+    ctx.fillStyle=['#ff8ed9','#ffdf95','#99edff','#ad9aff','#90ffc6'][i%5];
+    ctx.globalAlpha=.09+(i%3)*.025;
+    ctx.beginPath();ctx.moveTo(180,150);
+    ctx.lineTo(180+Math.cos(a-.045)*r,150+Math.sin(a-.045)*r);
+    ctx.lineTo(180+Math.cos(a+.045)*r,150+Math.sin(a+.045)*r);
+    ctx.closePath();ctx.fill();
   }
-  const cy=136+Math.sin(clock*.6)*4;
-  const facets=[
-    [[180,28],[118,114],[180,210],'#a6f9ff'],
-    [[180,28],[242,114],[180,210],'#f39dff'],
-    [[118,114],[180,92],[180,210],'#7f7dff'],
-    [[242,114],[180,92],[180,210],'#ffdc9c'],
-    [[180,28],[118,114],[180,92],'#fff5ff'],
-    [[180,28],[242,114],[180,92],'#b8ffff']
+  // Floating crystalline columns create a legendary final-stage silhouette.
+  for(let i=0;i<8;i++){
+    const left=i<4,order=i%4, x=left?12+order*22:348-order*22;
+    const y=230+order*33, h=75+order*19;
+    ctx.globalAlpha=.15;ctx.fillStyle=left?'#8aefff':'#e79cff';
+    ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+14,y-h+20);
+    ctx.lineTo(x+23,y+30);ctx.lineTo(x-13,y+30);ctx.closePath();ctx.fill();
+    ctx.lineWidth=1.5;ctx.strokeStyle='#baffff';ctx.globalAlpha=.28;ctx.stroke();
+  }
+  // Central massive luminous prism: clear, sharp faceted gemstone.
+  ctx.save();ctx.translate(180,148+Math.sin(t*.6)*5);
+  ctx.rotate(Math.sin(t*.17)*.045);
+  const pts=[[-65,-71],[0,-118],[65,-71],[86,5],[0,139],[-86,5]];
+  const faces=[
+    [[-65,-71],[0,-118],[0,8]], [[0,-118],[65,-71],[0,8]],
+    [[-65,-71],[0,8],[-86,5]], [[65,-71],[86,5],[0,8]],
+    [[-86,5],[0,8],[0,139]], [[86,5],[0,139],[0,8]]
   ];
-  ctx.translate(0,cy-136);
-  for(const [pts,color] of facets){ctx.beginPath();pts.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=color;ctx.globalAlpha=.27;ctx.fill();ctx.strokeStyle='#edffff';ctx.globalAlpha=.66;ctx.lineWidth=1.4;ctx.stroke()}
-  ctx.globalAlpha=.55;ctx.strokeStyle='#b9ffff';ctx.lineWidth=2;
-  ctx.beginPath();ctx.ellipse(180,123,112,37,clock*.12,0,Math.PI*2);ctx.stroke();
+  const colors=['#dffbff','#ffb0ed','#6edaff','#e6baff','#745dff','#ffd78f'];
+  for(let i=0;i<faces.length;i++){
+    const p=faces[i];ctx.globalAlpha=.47;ctx.fillStyle=colors[i];ctx.beginPath();
+    ctx.moveTo(...p[0]);ctx.lineTo(...p[1]);ctx.lineTo(...p[2]);ctx.closePath();ctx.fill();
+    ctx.globalAlpha=.9;ctx.lineWidth=1.4;ctx.strokeStyle='#edffff';ctx.stroke();
+  }
+  ctx.globalAlpha=.9;ctx.strokeStyle='#fffef1';ctx.lineWidth=2.1;
+  ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();ctx.stroke();
+  ctx.globalAlpha=.8;ctx.lineWidth=3;ctx.strokeStyle='#f3ffff';
+  ctx.beginPath();ctx.moveTo(-65,-71);ctx.lineTo(0,8);ctx.lineTo(65,-71);ctx.stroke();
   ctx.restore();
-  for(let i=0;i<48;i++){const x=(i*97+31)%W,y=(i*61+17)%H;
-    const twinkle=.2+.55*(.5+.5*Math.sin(clock*(.6+i%3*.2)+i));
-    ctx.fillStyle=['#ffbafa','#a3fbff','#fff3bb'][i%3];ctx.globalAlpha=twinkle;
-    ctx.fillRect(x,y,i%7===0?2:1,i%7===0?2:1)}
-  ctx.globalAlpha=1;
+  // Rainbow orbit and sparkles visible around the active playing area.
+  for(let i=0;i<3;i++){
+    ctx.globalAlpha=.28;ctx.lineWidth=2.5+i;
+    ctx.strokeStyle=['#82fff2','#ff97fb','#ffd17a'][i];
+    ctx.beginPath();ctx.ellipse(180,166,115+i*17,34+i*9,Math.sin(t*.1+i)*.28,0,Math.PI*2);ctx.stroke();
+  }
+  for(let i=0;i<95;i++){
+    const x=(i*109+17)%W,y=(i*79+29)%H;
+    const a=.25+.7*(.5+.5*Math.sin(t*(.65+i%4*.2)+i));
+    ctx.globalAlpha=a;ctx.fillStyle=['#ffffff','#a9fcff','#ffb4f0','#ffeab0'][i%4];
+    const r=i%13===0?2.5:i%5===0?1.6:.8;
+    ctx.fillRect(x-r*.5,y-r*.5,r,r);
+    if(i%13===0){ctx.globalAlpha=a*.6;ctx.fillRect(x-5,y,10,1);ctx.fillRect(x,y-5,1,10)}
+  }
+  ctx.restore();
 }
 function scene(){const m=selectedTheme,g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,m.colors[0]);g.addColorStop(1,m.colors[1]);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);if(m.id==='prism')prismFinale();for(let i=0;i<(m.id==='stars'||m.id==='space'?65:28);i++){ctx.fillStyle='rgba(219,238,255,'+(.12+(Math.sin(clock*.35+i)+1)*.08)+')';ctx.fillRect((i*79+17)%W,(i*113+23)%(H-35),i%6===0?1.5:1,1)}if(['sunset','moon'].includes(m.id)){ctx.fillStyle=m.id==='sunset'?'#ffcb9b22':'#e0eaff30';ctx.beginPath();ctx.arc(280,90,m.id==='sunset'?48:30,0,Math.PI*2);ctx.fill()}if(['aurora','prism'].includes(m.id)){ctx.save();ctx.globalAlpha=.12;for(let i=0;i<4;i++){ctx.strokeStyle=i%2?'#9b9fff':'#8fffcd';ctx.lineWidth=18;ctx.beginPath();ctx.moveTo(-20,100+i*20);ctx.bezierCurveTo(90,30+i*30,200,180+i*10,390,70+i*30);ctx.stroke()}ctx.restore()}ctx.strokeStyle='#c9e5ff08';ctx.lineWidth=.5;for(let i=-5;i<=5;i++){ctx.beginPath();ctx.moveTo(W/2+i*12,230);ctx.lineTo(W/2+i*100,H);ctx.stroke()}for(let y=260;y<H;y+=27){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}ctx.strokeStyle=m.accent+'50';ctx.beginPath();ctx.ellipse(182,H-25,133,10,0,0,Math.PI*2);ctx.stroke()}
 function advance(dt){if(document.hidden||paused||dialogOpen||activeView!=='play')return;clock+=dt;if(state==='settling'){delay-=dt;if(delay<=0)spawn()}if(state==='moving'&&moving){moving.x+=moving.dir*speed(level)*dt;const right=W-moving.w;if(moving.x<0){moving.x=-moving.x;moving.dir=1}if(moving.x>right){moving.x=2*right-moving.x;moving.dir=-1}}}
 function frame(t){const dt=last?Math.min((t-last)/1000,.035):0;last=t;advance(dt);ctx.clearRect(0,0,W,H);scene();const target=Math.max(0,blocks.length-11);camera+=(target-camera)*Math.min(1,dt*10);for(let i=Math.max(0,Math.floor(camera)-1);i<Math.min(blocks.length,Math.ceil(camera)+16);i++){const b=blocks[i],y=H-55-(i-camera)*BH;if(y>48&&y<H-30)box(b.x,y,b.w,b.n)}if(moving){const y=H-55-(blocks.length-camera)*BH,prev=blocks.at(-1);ctx.fillStyle='#c8ffe70b';ctx.fillRect(prev.x,52,prev.w,Math.max(0,y-52));box(moving.x,y,moving.w,moving.n,true)}particles=particles.filter(p=>p.a>0);particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=80*dt;p.a-=dt*1.5;ctx.fillStyle='rgba(220,255,233,'+Math.max(0,p.a)+')';ctx.fillRect(p.x,p.y,2,2)});rings=rings.filter(p=>p.a>0);rings.forEach(p=>{p.a-=dt*2;p.r+=dt*75;ctx.strokeStyle='rgba(194,255,219,'+Math.max(0,p.a*.4)+')';ctx.beginPath();ctx.ellipse(p.x,p.y,p.r,p.r*.3,0,0,Math.PI*2);ctx.stroke()});if(flash>0){ctx.fillStyle='rgba(202,255,226,'+flash*.035+')';ctx.fillRect(0,0,W,H);flash=Math.max(0,flash-dt*3)}requestAnimationFrame(frame)}
-stats();$('#board').classList.toggle('prism-active',selectedTheme.id==='prism');renderCollection();requestAnimationFrame(frame);
+stats();document.querySelector('#board').classList.toggle('prism-active',selectedTheme.id==='prism');renderCollection();requestAnimationFrame(frame);
 </script></body></html>
